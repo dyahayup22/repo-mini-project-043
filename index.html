@@ -3,52 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estimasi Biaya Konsumsi</title>
+    <title>Kalkulator Estimasi Biaya Kegiatan</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; padding: 20px; background-color: #e9ecef; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { color: #0078d4; border-bottom: 2px solid #0078d4; padding-bottom: 10px; }
-        h3 { color: #333; margin-top: 25px; }
-        .price-list { background: #f8f9fa; padding: 15px; border-left: 5px solid #0078d4; list-style: none; }
-        .price-list li { margin-bottom: 10px; font-weight: bold; }
-        code { background: #2d2d2d; color: #f8f8f2; padding: 8px 12px; border-radius: 6px; display: block; overflow-x: auto; margin: 10px 0; font-size: 0.9em; }
-        .example { color: #666; font-style: italic; font-size: 0.9em; }
-        .footer { margin-top: 30px; font-size: 0.8em; color: #888; text-align: center; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; padding: 20px; background-color: #f0f2f5; color: #333; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+        h1 { color: #005a9e; text-align: center; margin-bottom: 25px; }
+        
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: bold; margin-bottom: 8px; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        
+        button { width: 100%; padding: 14px; background-color: #005a9e; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background 0.3s; }
+        button:hover { background-color: #004578; }
+        
+        #result-container { margin-top: 25px; display: none; }
+        pre { background: #f4f4f4; padding: 15px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; }
+        
+        .loader { text-align: center; display: none; color: #005a9e; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Estimasi Biaya Konsumsi</h1>
-        
-        <h3>Ketentuan Biaya Konsumsi (per Peserta):</h3>
-        <ul class="price-list">
-            <li>Snack: Rp15.000</li>
-            <li>Makan: Rp30.000</li>
-            <li>Lengkap (Snack + Makan): Rp45.000</li>
-        </ul>
 
-        <hr>
-        <h3>Dokumentasi API Estimasi Biaya:</h3>
-        <p>Anda dapat menghitung estimasi biaya secara otomatis menggunakan API backend kami dengan format sebagai berikut:</p>
-        
-        <strong>Endpoint URL:</strong>
-        <code>GET https://estimasibiaya-gcgjasebfuhychea.eastasia-01.azurewebsites.net/api/EstimasiBiaya?jumlah=[ANGKA]&jenis=[TIPE]</code>
-        
-        <strong>Parameter:</strong>
-        <ul>
-            <li><code>jumlah</code>: Jumlah peserta (contoh: 40)</li>
-            <li><code>jenis</code>: Tipe konsumsi (pilihan: <em>snack</em>, <em>makan</em>, atau <em>lengkap</em>)</li>
-        </ul>
+<div class="container">
+    <h1>Estimasi Biaya Konsumsi</h1>
+    
+    <div class="form-group">
+        <label for="jumlah">Jumlah Peserta:</label>
+        <input type="number" id="jumlah" placeholder="Masukkan angka (contoh: 40)" min="1">
+    </div>
 
-        <p class="example">Contoh penggunaan: <br>
-            <a href="https://estimasibiaya-gcgjasebfuhychea.eastasia-01.azurewebsites.net/api/EstimasiBiaya?jumlah=50&jenis=makan" target="_blank">
-                https://estimasibiaya-gcgjasebfuhychea.eastasia-01.azurewebsites.net/api/EstimasiBiaya?jumlah=50&jenis=makan
-            </a>
-        </p>
-        
+    <div class="form-group">
+        <label for="jenis">Jenis Paket:</label>
+        <select id="jenis">
+            <option value="snack">Snack (Rp15.000)</option>
+            <option value="makan">Makan (Rp30.000)</option>
+            <option value="lengkap">Lengkap (Rp45.000)</option>
+        </select>
+    </div>
+
+    <button onclick="hitungBiaya()">Hitung Estimasi</button>
+
+    <div id="loader" class="loader">Menghitung...</div>
+
+    <div id="result-container">
+        <label>Hasil Response JSON:</label>
+        <pre id="json-output"></pre>
+    </div>
+</div>
+
+<script>
+    async function hitungBiaya() {
+        const jumlah = document.getElementById('jumlah').value;
+        const jenis = document.getElementById('jenis').value;
+        const loader = document.getElementById('loader');
+        const resultContainer = document.getElementById('result-container');
+        const jsonOutput = document.getElementById('json-output');
+
+        if (!jumlah || jumlah <= 0) {
+            alert("Harap masukkan jumlah peserta yang valid.");
+            return;
+        }
+
+        // Tampilkan loader
+        loader.style.display = 'block';
+        resultContainer.style.display = 'none';
+
+        const apiUrl = `https://estimasibiaya-gcgjasebfuhychea.eastasia-01.azurewebsites.net/api/EstimasiBiaya?jumlah=${jumlah}&jenis=${jenis}`;
+
+        try {
+            const response = await fetch(apiUrl);
+            const data = await response.json();
+
+            // Tampilkan hasil
+            jsonOutput.textContent = JSON.stringify(data, null, 4);
+            resultContainer.style.display = 'block';
+        } catch (error) {
+            alert("Gagal menghubungi API. Pastikan CORS sudah diaktifkan di Azure Function.");
+            console.error(error);
+        } finally {
+            loader.style.display = 'none';
+        }
+    }
+</script>
         <div class="footer">
             Dyah Ayu Puspitosari-043
         </div>
-    </div>
 </body>
 </html>
